@@ -1,92 +1,107 @@
-// Подключаем библиотеку SoftwareSerial
+
 #include "SoftwareSerial.h"
 
-// Создаем класс BTserial для работы с bluetooth модулем.
-SoftwareSerial BTserial(8, 9); // порт RX, порт TX
+#define BTrxPin 7
+#define BTtxPin 8
  
+// инициализируем новый последовательный порт
+SoftwareSerial BTserial =  SoftwareSerial(BTrxPin, BTtxPin);
+ 
+char cmd;
+#define maxSpeed 255
+byte speed=128;
 
-// declare pins 
 
 //left motor
-int lm1=5;
-int lm2=6;
+#define leftMotor1 5
+#define leftMotor2 6
 
 //right motor
-int rm1=2;
-int rm2=3;
+#define rightMotor1 9
+#define rightMotor2 10
 
-char command;
-byte speed=5;
+//ШИМ пины для mini pro - 3,5,6,9,10,11
 
-void setup()
-{
-    //init
-    pinMode(lm1,OUTPUT);
-    pinMode(lm2,OUTPUT);
-    pinMode(rm1,OUTPUT);
-    pinMode(rm2,OUTPUT);
 
-    //set serial
-    Serial.begin(9600);
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
 
-    // Set BT
-    BTserial.begin(9600);
+  // задаем режим работы выводов tx, rx:
+  pinMode(BTrxPin, INPUT);
+  pinMode(BTtxPin, OUTPUT);
+  BTserial.begin(9600);
 }
 
-void setMotors(uint8_t leftForward, uint8_t leftBackward,uint8_t rightForward, uint8_t rightBackward)
+void setMotorsD(uint8_t leftForward, uint8_t leftBackward,uint8_t rightForward, uint8_t rightBackward)
 {
-    digitalWrite(lm1,leftForward);
-    digitalWrite(lm2,leftBackward);
-    digitalWrite(rm1,rightForward);
-    digitalWrite(rm2,rightBackward);
+    digitalWrite(leftMotor1,leftForward);
+    digitalWrite(leftMotor2,leftBackward);
+    digitalWrite(rightMotor1,rightForward);
+    digitalWrite(rightMotor2,rightBackward);
     
 }
 
-void loop()
-
+void setMotorsA(uint8_t leftForward, uint8_t leftBackward,uint8_t rightForward, uint8_t rightBackward)
 {
-    //while(Serial.available()==0);
-    //val=Serial.read();
-    //Serial.print(val);
+    analogWrite(leftMotor1,leftForward);
+    analogWrite(leftMotor2,leftBackward);
+    analogWrite(rightMotor1,rightForward);
+    analogWrite(rightMotor2,rightBackward);
+    
+}
 
-    // Получаем данные от bluetooth модуля и передаем их в монитор порта.
-    if (BTserial.available())
-    {
-      command=BTserial.read();
-    }
-  
 
-    if (command<=9 and command>=0) {
-              Serial.print('Set speed');
-              Serial.print(command);
+void loop() {
+  // put your main code here, to run repeatedly:
+  if (BTserial.available())
+  {
+    cmd=BTserial.read();
+    Serial.println(cmd);  
+    if (cmd<='9' && cmd>='0') {
+              Serial.print("Set speed: ");
+              Serial.print(cmd);
+              Serial.print("0% ");
+              speed=maxSpeed*(cmd-48)/9;
+              Serial.println(speed);
             }
             else
             {
-              switch (command)
-                     {
+                switch (cmd) {
                       case 'F':
                               //forward
-                              setMotors(HIGH,LOW,HIGH,LOW); 
+                              Serial.println("FORWARD");
+                              //setMotorsD(HIGH,LOW,HIGH,LOW);
+                              setMotorsA(speed,LOW,speed,LOW); 
                               break;
+                      
                       case 'B':
                               //backward
-                              setMotors(LOW,HIGH,LOW,HIGH);
+                              Serial.println("BACK");
+                              //setMotorsD(LOW,HIGH,LOW,HIGH);
+                              setMotorsA(LOW,speed,LOW,speed);
                               break;
                       case 'R':
                               //Right
-                              setMotors(HIGH,LOW,LOW,HIGH);
+                              Serial.println("RIGHT");
+                              //setMotorsD(HIGH,LOW,LOW,HIGH);
+                              setMotorsA(speed,LOW,LOW,speed);
                               break;
                       case 'L':
                               //Left
-                              setMotors(LOW,HIGH,HIGH,LOW);
+                              Serial.println("LEFT");
+                              //setMotorsD(LOW,HIGH,HIGH,LOW);
+                              setMotorsA(LOW,speed,speed,LOW);
                               break; 
-                      default:
+                      case 'D':
                               //stop
-                              Serial.print(command);
-                              setMotors(LOW,LOW,LOW,LOW);
+                              Serial.println("STOP");
+                              //setMotorsD(LOW,LOW,LOW,LOW);
+                              setMotorsA(LOW,LOW,LOW,LOW);
                               break;
+                              
                      }
-    
-              delay(500);
-          }
+            }
+  delay(100);
+    }
 }
